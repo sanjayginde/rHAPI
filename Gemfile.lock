@@ -3,11 +3,9 @@ PATH
   specs:
     r_hapi (0.1.2)
       activesupport
-      activesupport
-      curb
       curb
       json
-      json
+      nokogiri
 
 GEM
   remote: http://rubygems.org/

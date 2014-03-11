@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'active_support'
 require 'active_support/inflector/inflections'
+require 'nokogiri'
 require File.expand_path('../connection', __FILE__)
 
 module RHapi
@@ -49,15 +50,25 @@ module RHapi
 
 
     def create(writer_email, author, title, content)
-       response = post(Blog.url_for("", self.guid, {:posts=>"posts.atom"} , "blog"), get_xml({:email=>writer_email, :content => content, :title=> title, :author => author }))
-       response_hash = Hash.from_xml(response.body_str)
-       return response_hash["feed"]["entry"]["link"]["href"] #return url
+      puts "GUID: #{self.guid}"
+      puts "URL: #{Blog.url_for(api: 'blog',identifier: self.guid, method: 'posts.atom')}"
+      request_content = get_xml({:email=>writer_email, :content => content, :title=> title, :author => author })
+      puts "REQUEST: #{request_content}"
+      response = post_atom(Blog.url_for(
+        :api => 'blog',
+        :identifier => self.guid,
+        :method => 'posts.atom'
+        ), 
+        get_xml({:email=>writer_email, :content => content, :title=> title, :author => author }))
+      puts "RESPONSE: #{response.body_str}"
+      xml_response = ::Nokogiri::XML(response.body_str)
+      return xml_response.css("feed entry link[href]")[0].attr(:href)
     end
 
 
 
     def get_xml(hash_in)
-     resp = <<-eos
+      resp = <<-eos
 <?xml version="1.0" encoding="utf-8"?>
 <entry xmlns="http://www.w3.org/2005/Atom">
   <title> #{hash_in[:title]}</title>
@@ -70,10 +81,7 @@ module RHapi
 </entry>
       eos
 
-
       resp
-
-
     end
 
     # Work with data in the data hash
